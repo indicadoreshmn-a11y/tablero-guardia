@@ -38,8 +38,9 @@ details{margin-top:8px}summary{cursor:pointer;font-weight:700}ol{margin:6px 0 0 
 #st{font-size:12px;color:var(--muted)}
 </style></head><body>
 <header><div class="hd"><div><h1>🏥 Tiempos de espera en Guardia · 2026</h1><div class="sub" id="st">Cargando…</div></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn g" id="bRel">🔄 Recargar</button><button class="btn" id="bUp">📂 Cargar Excel</button><button class="btn o" id="bClr">✖ Limpiar filtros</button><input type="file" id="fi" accept=".xlsx,.xls" hidden></div></div></header>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="bVis" style="background:#b9e8ff">🔍 Visualizar</button><button class="btn g" id="bRel">🔄 Recargar</button><button class="btn" id="bUp">📂 Cargar Excel</button><button class="btn o" id="bClr">✖ Limpiar filtros</button><input type="file" id="fi" accept=".xlsx,.xls" hidden></div></div></header>
 <main>
+<div class="card" id="ld" style="background:#fff3b0;color:#14213d;font-weight:700">⏳ Cargando los datos… No uses los filtros hasta que arriba diga "Fuente: …". Puede tardar hasta 30 segundos.</div>
 <div class="card"><div class="filters">
 <div><label>Fecha admisión</label><div class="rng"><div><small>Desde</small><input type="date" id="a1"></div><div><small>Hasta</small><input type="date" id="a2"></div></div></div>
 <div><label>Fecha inicio triage</label><div class="rng"><div><small>Desde</small><input type="date" id="i1"></div><div><small>Hasta</small><input type="date" id="i2"></div></div></div>
@@ -47,6 +48,7 @@ details{margin-top:8px}summary{cursor:pointer;font-weight:700}ol{margin:6px 0 0 
 <div><label>Motivo atención</label><select id="sMot"></select></div>
 <div><label>Profesional evolución</label><select id="sProf"></select></div>
 </div>
+<div class="sub" style="margin-top:8px">💡 Los gráficos y la tabla se actualizan solos al cambiar cualquier filtro. El botón <b>🔍 Visualizar</b> los recalcula y te lleva a los resultados.</div>
 <div class="chips" id="chips"></div>
 <div class="chips" id="dchips"></div>
 <details><summary>ℹ️ ¿Cómo se actualizan los datos?</summary><ol>
@@ -89,7 +91,7 @@ function fromSheet(rows){ // busca el encabezado por nombre: tolera columnas mov
  for(let i=h+1;i<rows.length;i++){const r=rows[i],a=pDT(g(r,'FECHA ADMISIÓN'));if(a==null)continue;
   out.push([a,pDT(g(r,'INICIO TRIAGE')),pDT(g(r,'FIN TRIAGE')),g(r,'SECCIÓN GUARDIA')||'(sin dato)',g(r,'MOTIVO ATENCIÓN')||'(sin dato)',String(g(r,'PROFESIONAL EVOLUCIÓN')||'(sin dato)').replace(/\s+/g,' ').trim(),colorKey(g(r,'RESUL. AUTO')),pT(g(r,'ESPERA: ADMISIÓN-INICIO')),g(r,'DIAGNÓSTICO EGRESO')||'',pT(g(r,'ESPERA: ADMISIÓN-ALTA'))])}
  return out}
-function setData(rows,s){R=rows;src=s;R.forEach(r=>{const d=new Date(r[0]*6e4);r[10]=d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1);r[11]=d.getUTCHours();r[12]=DIAS[d.getUTCDay()]});
+function setData(rows,s){$('ld').style.display='none';R=rows;src=s;R.forEach(r=>{const d=new Date(r[0]*6e4);r[10]=d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1);r[11]=d.getUTCHours();r[12]=DIAS[d.getUTCDay()]});
  const fill=(id,i,t)=>{const v=[...new Set(R.map(r=>r[i]))].sort();$(id).innerHTML='<option value="">'+t+'</option>'+v.map(x=>'<option>'+x+'</option>').join('')};
  fill('sSec',3,'Todas');fill('sMot',4,'Todos');fill('sProf',5,'Todos');
  const mx=Math.max(...R.map(r=>r[0]));$('st').textContent='Fuente: '+s+' · '+R.length.toLocaleString('es-AR')+' atenciones · '+fmt(Math.min(...R.map(r=>r[0])))+' → '+fmt(mx);page=0;render()}
@@ -148,10 +150,14 @@ for(const[id,d]of[['sSec','sec'],['sMot','mot'],['sProf','prof']])$(id).onchange
 $('bClr').onclick=()=>{for(const k in sel)sel[k].clear();['a1','a2','i1','i2'].forEach(i=>$(i).value='');page=0;render()};
 $('pv').onclick=()=>{page=Math.max(0,page-1);tbl(F())};$('nx').onclick=()=>{page++;tbl(F())};
 $('bUp').onclick=()=>$('fi').click();
-$('fi').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
- setData(fromSheet(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null})),'archivo cargado a mano ('+f.name+')')}catch(x){alert('Error: '+x.message)}};
-async function auto(){try{const r=await fetch('BASE_tiempo_espera_guardia.xlsx?'+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
- const wb=XLSX.read(await r.arrayBuffer(),{type:'array'});setData(fromSheet(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null})),'BASE_tiempo_espera_guardia.xlsx (automático)');return 1}catch(e){return 0}}
-$('bRel').onclick=async()=>{if(!(await auto()))alert('No encontré BASE_tiempo_espera_guardia.xlsx junto a la página. Usá "Cargar Excel".')};
-(async()=>{if(EMB.length)setData(EMB,'datos incluidos en la página');if(!(await auto())&&!EMB.length)$('st').textContent='Sin datos: falta BASE_tiempo_espera_guardia.xlsx o usá Cargar Excel'})();
+const st=x=>{$('st').textContent=x;const l=$('ld');if(l.style.display!=='none')l.textContent=x};
+const tick=()=>new Promise(r=>setTimeout(r,60));
+function parseBuf(buf){const wb=XLSX.read(buf,{type:'array',cellText:false,cellHTML:false,cellFormula:false,cellStyles:false});return fromSheet(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null}))}
+$('fi').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{st('⏳ Procesando el Excel… puede tardar hasta 30 segundos');await tick();setData(parseBuf(await f.arrayBuffer()),'archivo cargado a mano ('+f.name+')')}catch(x){st('⚠️ Error: '+x.message);alert('Error: '+x.message)}};
+async function auto(){try{st('⏳ Descargando el Excel…');const r=await fetch('BASE_tiempo_espera_guardia.xlsx?'+Date.now(),{cache:'no-store'});if(!r.ok){auto.err='no se encontró BASE_tiempo_espera_guardia.xlsx en el sitio (error '+r.status+')';return 0}
+ const buf=await r.arrayBuffer();st('⏳ Procesando '+(buf.byteLength/1e6).toFixed(1)+' MB de datos… puede tardar hasta 30 segundos');await tick();
+ setData(parseBuf(buf),'BASE_tiempo_espera_guardia.xlsx (automático)');return 1}catch(e){auto.err=e.message||String(e);return 0}}
+$('bRel').onclick=async()=>{const s0=$('st').textContent;if(!(await auto())){st(s0);alert('No pude leer BASE_tiempo_espera_guardia.xlsx: '+(auto.err||'')+'. Usá "Cargar Excel".')}};
+$('bVis').onclick=()=>{if(!R.length){alert('Todavía no se cargaron los datos. Esperá a que arriba diga "Fuente: …" o usá "Cargar Excel".');return}page=0;render();$('kpis').scrollIntoView({behavior:'smooth'})};
+(async()=>{if(EMB.length)setData(EMB,'datos incluidos en la página');const s0=$('st').textContent;if(!(await auto()))st(EMB.length?s0:'⚠️ Sin datos: '+(auto.err||'no se pudo leer el Excel')+'. Probá el botón "Cargar Excel" o revisá el nombre del archivo en GitHub.')})();
 </script></body></html>
