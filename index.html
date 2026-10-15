@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tiempos de espera en Guardia 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f1f5ff;--pin:#eef1ff;--card:#fff;--text:#14213d;--muted:#5b6b8c;--line:#d9e2ff;--grid:#e3e9fb;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1020;--pin:#1d2650;--card:#151c33;--text:#eef2ff;--muted:#9fb0d6;--line:#2a3560;--grid:#27305a}}
+:root[data-theme="dark"]{--bg:#0b1020;--pin:#1d2650;--card:#151c33;--text:#eef2ff;--muted:#9fb0d6;--line:#2a3560;--grid:#27305a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,Segoe UI,Roboto,Arial,sans-serif}
+header{background:linear-gradient(90deg,#ff1744,#ff9100,#ffd600,#00e676,#2979ff,#d500f9);padding:3px 0}
+.hd{background:var(--card);padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:20px}.sub{color:var(--muted);font-size:12px}
+main{padding:14px;max-width:1500px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px}
+input,select{width:100%;padding:7px;border:2px solid #c9d6ff;border-radius:10px;background:var(--pin);color:var(--text);font:inherit}
+input:focus,select:focus{outline:none;border-color:#2979ff}
+.rng{display:flex;flex-wrap:wrap;gap:8px}.rng>div{flex:1 1 140px;min-width:0}.rng small{display:block;font-size:11px;color:var(--muted);margin-bottom:1px}input[type=date]{min-width:140px;padding-right:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.chip{border:3px solid transparent;border-radius:20px;padding:6px 14px;font-weight:800;cursor:pointer;color:#111;opacity:.45}
+.chip.on,.nofilt .chip{opacity:1;box-shadow:0 2px 8px #0004}
+.btn{border:0;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;color:#14213d;background:#c9d6ff}.btn:hover{filter:brightness(.95)}
+.btn.g{background:#c4f5dc}.btn.o{background:#ffd8cf}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.k{border-radius:14px;padding:12px 14px;color:#fff}.k b{display:block;font-size:26px}.k span{font-size:11px;text-transform:uppercase;opacity:.95;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
+.grid .card{margin:0}h3{margin:0 0 6px;font-size:14px}.cv{position:relative;height:270px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:12px}
+th{background:linear-gradient(90deg,#2979ff,#d500f9);color:#fff;text-align:left;padding:6px;position:sticky;top:0;white-space:nowrap}
+td{padding:5px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.dchip{border:2px solid transparent;border-radius:20px;padding:6px 14px;font-weight:700;cursor:pointer;color:#14213d;opacity:.8}.dchip.on{border-color:var(--text);box-shadow:0 2px 8px #0004;opacity:1}
+.bd{padding:2px 9px;border-radius:12px;font-weight:800;color:#111}
+details{margin-top:8px}summary{cursor:pointer;font-weight:700}ol{margin:6px 0 0 18px;padding:0}li{margin:3px 0}
+#st{font-size:12px;color:var(--muted)}
+</style></head><body>
+<header><div class="hd"><div><h1>🏥 Tiempos de espera en Guardia · 2026</h1><div class="sub" id="st">Cargando…</div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn g" id="bRel">🔄 Recargar</button><button class="btn" id="bUp">📂 Cargar Excel</button><button class="btn o" id="bClr">✖ Limpiar filtros</button><input type="file" id="fi" accept=".xlsx,.xls" hidden></div></div></header>
+<main>
+<div class="card"><div class="filters">
+<div><label>Fecha admisión</label><div class="rng"><div><small>Desde</small><input type="date" id="a1"></div><div><small>Hasta</small><input type="date" id="a2"></div></div></div>
+<div><label>Fecha inicio triage</label><div class="rng"><div><small>Desde</small><input type="date" id="i1"></div><div><small>Hasta</small><input type="date" id="i2"></div></div></div>
+<div><label>Sección guardia</label><select id="sSec"></select></div>
+<div><label>Motivo atención</label><select id="sMot"></select></div>
+<div><label>Profesional evolución</label><select id="sProf"></select></div>
+</div>
+<div class="chips" id="chips"></div>
+<div class="chips" id="dchips"></div>
+<details><summary>ℹ️ ¿Cómo se actualizan los datos?</summary><ol>
+<li><b>Manual:</b> botón <b>📂 Cargar Excel</b> → elegí el Excel nuevo (mismo formato). Los gráficos se recalculan al instante.</li>
+<li><b>Automático:</b> si esta página está en un sitio (ej. GitHub Pages) junto a un archivo llamado <code>BASE_tiempo_espera_guardia.xlsx</code>, lo lee solo cada vez que se abre. Reemplazá ese archivo y listo.</li>
+<li>Si no encuentra el archivo, usa los datos incluidos al generar la página.</li></ol></details></div>
+<div class="kpis" id="kpis"></div>
+<div class="grid">
+<div class="card"><h3>🎯 Atenciones por color de triage (clic para filtrar)</h3><div class="cv"><canvas id="c1"></canvas></div></div>
+<div class="card"><h3>⏱️ Espera promedio ADMISIÓN → INICIO (min) por color</h3><div class="cv"><canvas id="c2"></canvas></div></div>
+<div class="card"><h3>🏥 Sección guardia</h3><div class="cv"><canvas id="c3"></canvas></div></div>
+<div class="card"><h3>📋 Motivo de atención (barras)</h3><div class="cv"><canvas id="c4"></canvas></div></div>
+<div class="card"><h3>👩‍⚕️ Profesional evolución (top 12)</h3><div class="cv"><canvas id="c5"></canvas></div></div>
+<div class="card"><h3>📅 Atenciones por mes</h3><div class="cv"><canvas id="c6"></canvas></div></div>
+<div class="card"><h3>🕒 Atenciones por hora de admisión (radar)</h3><div class="cv"><canvas id="c7"></canvas></div></div>
+<div class="card"><h3>📆 Atenciones por día de la semana</h3><div class="cv"><canvas id="c8"></canvas></div></div>
+</div>
+<div class="card" style="margin-top:12px"><h3>🔎 Detalle de atenciones</h3><div class="tw"><table id="tb"></table></div>
+<div style="margin-top:8px;display:flex;gap:8px;align-items:center"><button class="btn" id="pv">◀</button><span id="pg"></span><button class="btn" id="nx">▶</button></div></div>
+</main>
+<script>
+const EMB=/*DATA*/[];
+const NIV={'ROJO':['Rojo','#ff1744','Rojo · Nivel 1'],'AMARILLO':['Amarillo','#ffea00','Amarillo · Nivel 2'],'VERDE':['Verde','#00e676','Verde · Nivel 3'],'AZUL':['Azul','#2979ff','Azul · Niveles 4-5'],'SIN TRIAGE':['Sin triage','#d500f9','Sin triage']};
+const TC=k=>(k==='AMARILLO'||k==='VERDE')?'#111':'#fff';
+function colorKey(v){const m=/-\s*([A-Za-zÁÉÍÓÚáéíóú]+)/.exec(String(v||''));const k=m?m[1].toUpperCase():'';return NIV[k]?k:'SIN TRIAGE'}
+const ORD=Object.keys(NIV),$=id=>document.getElementById(id);
+const COL={niv:6,sec:3,mot:4,prof:5,mes:10,hora:11,dia:12};
+const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],ORDD=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'],PST=['#ffd1dc','#ffe0b3','#fff3b0','#c8f7dc','#c2f0f7','#cbd9ff','#e6ccff'];
+let R=[],sel={niv:new Set,sec:new Set,mot:new Set,prof:new Set,mes:new Set,hora:new Set,dia:new Set},CH={},page=0,src='';
+const p2=n=>String(n).padStart(2,'0');
+function fmt(t){if(t==null)return'–';const d=new Date(t*6e4);return p2(d.getUTCDate())+'/'+p2(d.getUTCMonth()+1)+'/'+d.getUTCFullYear()+' '+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes())}
+function fm(m){if(m==null||isNaN(m))return'–';m=Math.round(m);return m>=60?Math.floor(m/60)+' h '+p2(m%60)+' min':m+' min'}
+function pDT(v){if(v==null||v==='')return null;if(typeof v==='number')return Math.round((v-25569)*1440);if(v instanceof Date)return Math.round(v.getTime()/6e4);
+const m=/(\d+)\/(\d+)\/(\d{4})\s+(\d+):(\d+)/.exec(v);return m?Date.UTC(+m[3],m[2]-1,+m[1],+m[4],+m[5])/6e4:null}
+function pT(v){if(typeof v==='number')return v*1440;const m=/^(\d+):(\d\d):(\d\d)$/.exec(String(v||'').trim());return m?+m[1]*60+ +m[2]+ +m[3]/60:null}
+function fromSheet(rows){ // busca el encabezado por nombre: tolera columnas movidas
+ const h=rows.findIndex(r=>r&&r.includes('FECHA ADMISIÓN'));if(h<0)throw Error('No encontré la fila de encabezados (columna FECHA ADMISIÓN)');
+ const ix={};rows[h].forEach((n,i)=>{if(n)ix[String(n).trim()]=i});
+ const g=(r,n)=>r[ix[n]],out=[];
+ for(let i=h+1;i<rows.length;i++){const r=rows[i],a=pDT(g(r,'FECHA ADMISIÓN'));if(a==null)continue;
+  out.push([a,pDT(g(r,'INICIO TRIAGE')),pDT(g(r,'FIN TRIAGE')),g(r,'SECCIÓN GUARDIA')||'(sin dato)',g(r,'MOTIVO ATENCIÓN')||'(sin dato)',String(g(r,'PROFESIONAL EVOLUCIÓN')||'(sin dato)').replace(/\s+/g,' ').trim(),colorKey(g(r,'RESUL. AUTO')),pT(g(r,'ESPERA: ADMISIÓN-INICIO')),g(r,'DIAGNÓSTICO EGRESO')||'',pT(g(r,'ESPERA: ADMISIÓN-ALTA'))])}
+ return out}
+function setData(rows,s){R=rows;src=s;R.forEach(r=>{const d=new Date(r[0]*6e4);r[10]=d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1);r[11]=d.getUTCHours();r[12]=DIAS[d.getUTCDay()]});
+ const fill=(id,i,t)=>{const v=[...new Set(R.map(r=>r[i]))].sort();$(id).innerHTML='<option value="">'+t+'</option>'+v.map(x=>'<option>'+x+'</option>').join('')};
+ fill('sSec',3,'Todas');fill('sMot',4,'Todos');fill('sProf',5,'Todos');
+ const mx=Math.max(...R.map(r=>r[0]));$('st').textContent='Fuente: '+s+' · '+R.length.toLocaleString('es-AR')+' atenciones · '+fmt(Math.min(...R.map(r=>r[0])))+' → '+fmt(mx);page=0;render()}
+function rng(a,b){const f=$(a).value,t=$(b).value;return[f?Date.parse(f)/6e4:-1/0,t?Date.parse(t)/6e4+1440:1/0,!!(f||t)]}
+function F(ex){const A=rng('a1','a2'),I=rng('i1','i2');
+ return R.filter(r=>{if(r[0]<A[0]||r[0]>=A[1])return 0;
+  if(I[2]&&(r[1]==null||r[1]<I[0]||r[1]>=I[1]))return 0;
+  for(const k in COL){if(k!==ex&&sel[k].size&&!sel[k].has(String(r[COL[k]])))return 0}return 1})}
+function grp(rows,i){const m=new Map;for(const r of rows){const k=String(r[i]);let o=m.get(k);if(!o)m.set(k,o={n:0,s:0,c:0});o.n++;if(r[7]!=null&&r[7]>=0){o.s+=r[7];o.c++}}return m}
+function pct(a,p){if(!a.length)return null;a.sort((x,y)=>x-y);return a[Math.min(a.length-1,Math.floor(p*a.length))]}
+function kpis(rows){const w=rows.map(r=>r[7]).filter(x=>x!=null&&x>=0),av=w.length?w.reduce((a,b)=>a+b,0)/w.length:null,o=w.filter(x=>x>60).length;
+ const K=[['Atenciones',rows.length.toLocaleString('es-AR'),'#2979ff'],['Espera promedio',fm(av),'#00c853'],['Mediana',fm(pct(w.slice(),.5)),'#00b8d4'],['Percentil 90',fm(pct(w.slice(),.9)),'#ff9100'],['Esperas > 60 min',w.length?(100*o/w.length).toFixed(1)+' %':'–','#ff1744'],['Sin triage',(rows.filter(r=>r[6]==='SIN TRIAGE').length).toLocaleString('es-AR'),'#d500f9']];
+ $('kpis').innerHTML=K.map(k=>'<div class="k" style="background:'+k[2]+'"><span>'+k[0]+'</span><b>'+k[1]+'</b></div>').join('')}
+const PAL=['#ff1744','#ff9100','#ffea00','#00e676','#00e5ff','#2979ff','#d500f9','#f50057','#76ff03','#ff6d00','#18ffff','#651fff'];
+const LAB={id:'vl',afterDatasetsDraw(ch,a,o){const c=ch.ctx,t=ch.config.type,ds=ch.data.datasets[0],m=ch.getDatasetMeta(0),tot=ds.data.reduce((x,y)=>x+y,0);
+ c.save();c.font='bold 12px system-ui,Arial';c.textBaseline='middle';c.lineJoin='round';c.lineWidth=4;
+ m.data.forEach((el,i)=>{const v=ds.data[i];if(v==null||isNaN(v))return;let s=o.f?o.f(v):v.toLocaleString('es-AR'),x,y;c.textAlign='center';
+  if(t==='doughnut'||t==='pie'){if(v/tot<.04)return;const p=el.tooltipPosition();x=p.x;y=p.y;s=s+' · '+Math.round(100*v/tot)+'%'}
+  else if(t==='bar'){x=el.x;y=el.y;if(o.h){x+=6;c.textAlign='left'}else y-=10}
+  else{x=el.x;y=el.y-13}
+  c.strokeStyle=o.bg;c.fillStyle=o.col;c.strokeText(s,x,y);c.fillText(s,x,y)});c.restore()}};
+function mk(id,type,dim,keys,vals,cols,labs,fmtv,horiz){const on=sel[dim].size>0,cs=getComputedStyle(document.documentElement),txt=cs.getPropertyValue('--text').trim(),gr=cs.getPropertyValue('--grid').trim(),bg=cs.getPropertyValue('--card').trim();
+ const c=keys.map((k,i)=>(!on||sel[dim].has(k))?cols[i]:cols[i]+'44'),circ=type==='doughnut'||type==='pie',ln=type==='line'||type==='radar';
+ const names=(labs||keys).map(s=>s.length>30?s.slice(0,29)+'…':s),lg=circ?names.map((s,i)=>s+': '+(fmtv?fmtv(vals[i]):vals[i].toLocaleString('es-AR'))):names;
+ if(CH[id])CH[id].destroy();
+ const ds=circ?{data:vals,backgroundColor:c,borderColor:bg,borderWidth:2}:ln?{data:vals,borderColor:cols[0],backgroundColor:cols[0]+'33',fill:true,tension:.3,borderWidth:3,pointBackgroundColor:c,pointBorderColor:cols[0],pointRadius:6,pointHoverRadius:8,pointHitRadius:14}:{data:vals,backgroundColor:c,borderRadius:6};
+ const ax={ticks:{color:txt,autoSkip:false},grid:{color:gr}},lin={...ax,grace:'10%',beginAtZero:true};
+ CH[id]=new Chart($(id),{type,data:{labels:lg,datasets:[ds]},plugins:[LAB],options:{indexAxis:horiz?'y':'x',maintainAspectRatio:false,animation:{duration:250},color:txt,layout:{padding:{top:22,right:horiz?64:22,left:4,bottom:4}},interaction:{mode:'nearest',intersect:true},
+ plugins:{vl:{f:fmtv,bg,col:txt,h:horiz},legend:{display:circ,position:'bottom',labels:{color:txt,boxWidth:14}},tooltip:{callbacks:{title:x=>(labs||keys)[x[0].dataIndex],label:x=>' '+(fmtv?fmtv(x.raw):x.raw.toLocaleString('es-AR'))}}},
+ scales:circ?{}:type==='radar'?{r:{ticks:{display:false},grid:{color:gr},angleLines:{color:gr},pointLabels:{color:txt,font:{size:11}},beginAtZero:true}}:horiz?{x:lin,y:ax}:{x:ax,y:lin},
+ onClick:(e,els)=>{if(!els.length)return;const k=keys[els[0].index];sel[dim].has(k)?sel[dim].delete(k):sel[dim].add(k);page=0;render()}}})}
+function top(rows,i,n){return[...grp(rows,i)].sort((a,b)=>b[1].n-a[1].n).slice(0,n)}
+function render(){const all=F();kpis(all);
+ $('chips').innerHTML='<b>TRIAGE:</b>'+ORD.map(k=>'<span class="chip'+(sel.niv.has(k)?' on':'')+'" data-k="'+k+'" style="background:'+NIV[k][1]+';color:'+TC(k)+'">'+NIV[k][2]+'</span>').join('');
+ $('chips').classList.toggle('nofilt',!sel.niv.size);
+ $('dchips').innerHTML='<b>DÍA DE LA SEMANA (podés elegir varios):</b>'+ORDD.map((k,i)=>'<span class="dchip'+(sel.dia.has(k)?' on':'')+'" data-d="'+k+'" style="background:'+PST[i]+'">'+k+'</span>').join('');
+ for(const[id,d]of[['sSec','sec'],['sMot','mot'],['sProf','prof']])$(id).value=sel[d].size===1?[...sel[d]][0]:'';
+ let g=grp(F('niv'),6),ks=ORD.filter(k=>g.has(k));
+ mk('c1','doughnut','niv',ks,ks.map(k=>g.get(k).n),ks.map(k=>NIV[k][1]),ks.map(k=>NIV[k][0]));
+ mk('c2','bar','niv',ks,ks.map(k=>g.get(k).c?+(g.get(k).s/g.get(k).c).toFixed(1):0),ks.map(k=>NIV[k][1]),ks.map(k=>NIV[k][0]),fm);
+ let t=top(F('sec'),3,8);mk('c3','pie','sec',t.map(x=>x[0]),t.map(x=>x[1].n),['#ff9100','#2979ff','#00e676','#d500f9','#ff1744','#00e5ff','#ffea00','#f50057']);
+ t=top(F('mot'),4,9);mk('c4','bar','mot',t.map(x=>x[0]),t.map(x=>x[1].n),PAL.slice(1),null,null,1);
+ t=top(F('prof'),5,12);mk('c5','bar','prof',t.map(x=>x[0]),t.map(x=>x[1].n),PAL,null,null,1);
+ g=grp(F('mes'),10);ks=[...g.keys()].sort();mk('c6','line','mes',ks,ks.map(k=>g.get(k).n),ks.map(()=>'#2979ff'));
+ g=grp(F('hora'),11);ks=Array.from({length:24},(_,i)=>String(i));mk('c7','radar','hora',ks,ks.map(k=>g.has(k)?g.get(k).n:0),ks.map(()=>'#d500f9'),ks.map(k=>k+' h'));
+ g=grp(F('dia'),12);ks=ORDD;mk('c8','bar','dia',ks,ks.map(k=>g.has(k)?g.get(k).n:0),['#ff1744','#ff9100','#ffea00','#00e676','#00e5ff','#2979ff','#d500f9']);
+ tbl(all)}
+function tbl(rows){const s=rows.slice().sort((a,b)=>b[0]-a[0]),n=Math.max(1,Math.ceil(s.length/20));page=Math.min(page,n-1);
+ $('tb').innerHTML='<tr>'+['Admisión','Día','Sección','Motivo','Profesional','Triage','Inicio triage','Espera adm→inicio','Espera adm→alta','Diagnóstico'].map(h=>'<th>'+h+'</th>').join('')+'</tr>'+
+ s.slice(page*20,page*20+20).map(r=>{const c=NIV[r[6]]||['?','#ccc'];return'<tr><td>'+fmt(r[0])+'</td><td>'+r[12]+'</td><td>'+r[3]+'</td><td>'+r[4]+'</td><td>'+r[5]+'</td><td><span class="bd" style="background:'+c[1]+';color:'+TC(r[6])+'">'+c[0]+'</span></td><td>'+fmt(r[1])+'</td><td>'+fm(r[7])+'</td><td>'+fm(r[9])+'</td><td>'+r[8]+'</td></tr>'}).join('');
+ $('pg').textContent='Página '+(page+1)+' de '+n+' · '+s.length.toLocaleString('es-AR')+' filas'}
+$('dchips').onclick=e=>{const k=e.target.dataset.d;if(!k)return;sel.dia.has(k)?sel.dia.delete(k):sel.dia.add(k);page=0;render()};
+$('chips').onclick=e=>{const k=e.target.dataset.k;if(!k)return;sel.niv.has(k)?sel.niv.delete(k):sel.niv.add(k);page=0;render()};
+for(const[id,d]of[['sSec','sec'],['sMot','mot'],['sProf','prof']])$(id).onchange=e=>{sel[d].clear();if(e.target.value)sel[d].add(e.target.value);page=0;render()};
+['a1','a2','i1','i2'].forEach(i=>$(i).onchange=()=>{page=0;render()});
+$('bClr').onclick=()=>{for(const k in sel)sel[k].clear();['a1','a2','i1','i2'].forEach(i=>$(i).value='');page=0;render()};
+$('pv').onclick=()=>{page=Math.max(0,page-1);tbl(F())};$('nx').onclick=()=>{page++;tbl(F())};
+$('bUp').onclick=()=>$('fi').click();
+$('fi').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+ setData(fromSheet(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null})),'archivo cargado a mano ('+f.name+')')}catch(x){alert('Error: '+x.message)}};
+async function auto(){try{const r=await fetch('BASE_tiempo_espera_guardia.xlsx?'+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;
+ const wb=XLSX.read(await r.arrayBuffer(),{type:'array'});setData(fromSheet(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null})),'BASE_tiempo_espera_guardia.xlsx (automático)');return 1}catch(e){return 0}}
+$('bRel').onclick=async()=>{if(!(await auto()))alert('No encontré BASE_tiempo_espera_guardia.xlsx junto a la página. Usá "Cargar Excel".')};
+(async()=>{if(EMB.length)setData(EMB,'datos incluidos en la página');if(!(await auto())&&!EMB.length)$('st').textContent='Sin datos: falta BASE_tiempo_espera_guardia.xlsx o usá Cargar Excel'})();
+</script></body></html>
