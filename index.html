@@ -123,7 +123,7 @@ function mk(id,type,dim,keys,vals,cols,labs,fmtv,horiz){const on=sel[dim].size>0
  plugins:{vl:{f:fmtv,bg,col:txt,h:horiz},legend:{display:circ,position:'bottom',labels:{color:txt,boxWidth:14}},tooltip:{callbacks:{title:x=>(labs||keys)[x[0].dataIndex],label:x=>' '+(fmtv?fmtv(x.raw):x.raw.toLocaleString('es-AR'))}}},
  scales:circ?{}:type==='radar'?{r:{ticks:{display:false},grid:{color:gr},angleLines:{color:gr},pointLabels:{color:txt,font:{size:11}},beginAtZero:true}}:horiz?{x:lin,y:ax}:{x:ax,y:lin},
  onClick:(e,els)=>{if(!els.length)return;const k=keys[els[0].index];sel[dim].has(k)?sel[dim].delete(k):sel[dim].add(k);page=0;render()}}})}
-function top(rows,i,n){return[...grp(rows,i)].sort((a,b)=>b[1].n-a[1].n).slice(0,n)}
+function topN(rows,i,n){return[...grp(rows,i)].sort((a,b)=>b[1].n-a[1].n).slice(0,n)}
 function render(){const all=F();kpis(all);
  $('chips').innerHTML='<b>TRIAGE:</b>'+ORD.map(k=>'<span class="chip'+(sel.niv.has(k)?' on':'')+'" data-k="'+k+'" style="background:'+NIV[k][1]+';color:'+TC(k)+'">'+NIV[k][2]+'</span>').join('');
  $('chips').classList.toggle('nofilt',!sel.niv.size);
@@ -132,9 +132,9 @@ function render(){const all=F();kpis(all);
  let g=grp(F('niv'),6),ks=ORD.filter(k=>g.has(k));
  mk('c1','doughnut','niv',ks,ks.map(k=>g.get(k).n),ks.map(k=>NIV[k][1]),ks.map(k=>NIV[k][0]));
  mk('c2','bar','niv',ks,ks.map(k=>g.get(k).c?+(g.get(k).s/g.get(k).c).toFixed(1):0),ks.map(k=>NIV[k][1]),ks.map(k=>NIV[k][0]),fm);
- let t=top(F('sec'),3,8);mk('c3','pie','sec',t.map(x=>x[0]),t.map(x=>x[1].n),['#ff9100','#2979ff','#00e676','#d500f9','#ff1744','#00e5ff','#ffea00','#f50057']);
- t=top(F('mot'),4,9);mk('c4','bar','mot',t.map(x=>x[0]),t.map(x=>x[1].n),PAL.slice(1),null,null,1);
- t=top(F('prof'),5,12);mk('c5','bar','prof',t.map(x=>x[0]),t.map(x=>x[1].n),PAL,null,null,1);
+ let t=topN(F('sec'),3,8);mk('c3','pie','sec',t.map(x=>x[0]),t.map(x=>x[1].n),['#ff9100','#2979ff','#00e676','#d500f9','#ff1744','#00e5ff','#ffea00','#f50057']);
+ t=topN(F('mot'),4,9);mk('c4','bar','mot',t.map(x=>x[0]),t.map(x=>x[1].n),PAL.slice(1),null,null,1);
+ t=topN(F('prof'),5,12);mk('c5','bar','prof',t.map(x=>x[0]),t.map(x=>x[1].n),PAL,null,null,1);
  g=grp(F('mes'),10);ks=[...g.keys()].sort();mk('c6','line','mes',ks,ks.map(k=>g.get(k).n),ks.map(()=>'#2979ff'));
  g=grp(F('hora'),11);ks=Array.from({length:24},(_,i)=>String(i));mk('c7','radar','hora',ks,ks.map(k=>g.has(k)?g.get(k).n:0),ks.map(()=>'#d500f9'),ks.map(k=>k+' h'));
  g=grp(F('dia'),12);ks=ORDD;mk('c8','bar','dia',ks,ks.map(k=>g.has(k)?g.get(k).n:0),['#ff1744','#ff9100','#ffea00','#00e676','#00e5ff','#2979ff','#d500f9']);
